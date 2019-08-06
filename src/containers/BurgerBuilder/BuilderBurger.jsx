@@ -2,6 +2,8 @@ import React, { Component } from 'react';
 import Aux from '../../hoc/Aux';
 import Burger from '../../components/Burger/Burger';
 import BuildControls from '../../components/Burger/BuildControls/BuildControls';
+import Modal from '../../components/UI/Modal/Modal';
+import OrderSummary from '../../components/Burger/OrderSummary/OrderSummary';
 
 const INGREDIENT_PRICES = {
   salad: 0.5,
@@ -18,7 +20,30 @@ class BuilderBurger extends Component {
       cheese: 0,
       meat: 0
     },
-    totalPrice: 4
+    totalPrice: 4,
+    purchaseable: false,
+    purchasing: false
+  };
+
+  isPurchasedHandler = _ => {
+    this.setState({ purchasing: true })
+  }
+
+  purchaseCancelHandler = _ => {
+    this.setState({ purchasing: false });
+  }
+
+  purchaseContinueHandler = _ => {
+    alert("Congratulations!");
+  }
+
+  updatePurchaseHandler = ingredients => {
+    const sum = Object.keys(ingredients).map(igKey => {
+      return ingredients[igKey]
+    }).reduce((sum, el) => {
+      return sum + el;
+    }, 0);
+    this.setState({ purchaseable: sum > 0 })
   }
 
   addIngredientHandler = type => {
@@ -27,11 +52,13 @@ class BuilderBurger extends Component {
     const updatedIngredients = {
       ...this.state.ingredients
     };
+
     updatedIngredients[type] = updatedCount;
     const priceAddition = INGREDIENT_PRICES[type];
     const oldPrice = this.state.totalPrice;
     const newPrice = oldPrice + priceAddition;
     this.setState({ totalPrice: newPrice, ingredients: updatedIngredients });
+    this.updatePurchaseHandler(updatedIngredients);
   }
 
   removeIngredientHandler = type => {
@@ -49,7 +76,9 @@ class BuilderBurger extends Component {
     const oldPrice = this.state.totalPrice;
     const newPrice = oldPrice - priceDeduction;
     this.setState({ totalPrice: newPrice, ingredients: updatedIngredients });
+    this.updatePurchaseHandler(updatedIngredients);
   }
+
   render() {
     const disabledInfo = {
       ...this.state.ingredients
@@ -58,10 +87,24 @@ class BuilderBurger extends Component {
       if (disabledInfo[key] <= 0) disabledInfo[key] = true;
       else disabledInfo[key] = false;
     }
+
     return (
       <Aux>
+        <Modal
+          modalClosed={this.purchaseCancelHandler}
+          show={this.state.purchasing}>
+          <OrderSummary
+            price={this.state.totalPrice}
+            purchaseCancelled={this.purchaseCancelHandler}
+            purchaseContinued={this.purchaseContinueHandler}
+            ingredients={this.state.ingredients}
+          />
+        </Modal>
         <Burger ingredients={this.state.ingredients} />
         <BuildControls
+          isPurchased={this.isPurchasedHandler}
+          purchaseable={this.state.purchaseable}
+          price={this.state.totalPrice}
           disabled={disabledInfo}
           ingredientRemoved={this.removeIngredientHandler}
           ingredientAdded={this.addIngredientHandler} />
